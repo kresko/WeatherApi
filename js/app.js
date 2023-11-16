@@ -241,3 +241,6 @@ function toggleTemperatureUnit(searchInputValue, glossaryKey) {
 function toggleTemperatureUnitButtonContent(buttonElement, currentTempUnit = "°C") {
     buttonElement.innerHTML = "Display: " + "<span class='current-temp-unit-element'>" + currentTempUnit + "</span>"; 
 }
+
+//test comment
+const comment = "dfgdf";
