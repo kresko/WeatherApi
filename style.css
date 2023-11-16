@@ -71,13 +71,19 @@ section .search-location-container input::placeholder {
     color: #8ABCD7;
 }
 
-section .search-location-container button {
+section .search-location-container .search-location-button,
+section .search-location-container .display-temp-unit {
     width: 20%;
     color: #fff;
     font-size: 22px;
     border: 1px solid #3989b4;
     border-radius: 0 20px 20px 0;
     background-color: #8ABCD7;
+}
+
+section .search-location-container .display-temp-unit {
+    margin-right: 20px;
+    border-radius: 20px;
 }
 
 section .forecast-container {

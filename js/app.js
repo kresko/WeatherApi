@@ -1,13 +1,24 @@
 (function () {
     const searchInput = document.getElementsByClassName("search-location-input")[0];
     const searchButton = document.getElementsByClassName("search-location-button")[0];
+    const displayTempButton = document.getElementsByClassName("display-temp-unit")[0];
     const numberOfDays = 3;
     const apiKey = "54e9b7e0ebf04b29b5c181307232610";
-    const errorMessageTextGlossary = "Wrong Input! Please enter correct message!";
+    const errorMessageTextGlossary = "Wrong Input! Please enter correct value!";
+    const currentTempUnitIsUndefined = "Current temperature unit is undefined. Please enter input!";
+    let displayTempUnitButtonClicked;
+
+    displayTempButton.addEventListener("click", () => {
+        displayTempUnitButtonClicked = true;
+
+        currentTempUnit = toggleTemperatureUnit(searchInput.value, currentTempUnitIsUndefined);
+        toggleTemperatureUnitButtonContent(displayTempButton, currentTempUnit);
+        searchForWeatherData(apiKey, numberOfDays, searchInput.value, displayTempUnitButtonClicked, currentTempUnit);
+    });
 
     searchButton.addEventListener("click", () => {
         if(checkIfRegexIsCorrect(searchInput.value, errorMessageTextGlossary)) {
-            searchForWeatherData(apiKey, numberOfDays, searchInput.value);
+            searchForWeatherData(apiKey, numberOfDays, searchInput.value, displayTempUnitButtonClicked, currentTempUnit = "°C");
         }
     });
 
@@ -16,7 +27,7 @@
             event.preventDefault;
 
             if(checkIfRegexIsCorrect(searchInput.value, errorMessageTextGlossary)) {
-                searchForWeatherData(apiKey, numberOfDays, searchInput.value);
+                searchForWeatherData(apiKey, numberOfDays, searchInput.value,displayTempUnitButtonClicked, currentTempUnit = "°C");
             };
         }
     });
@@ -31,7 +42,7 @@ function checkIfRegexIsCorrect(searchInputValue, glossaryKey) {
     }
 }
 
-async function searchForWeatherData(apiKey, numberOfDays, searchInputValue) {
+async function searchForWeatherData(apiKey, numberOfDays, searchInputValue, displayTempUnitButtonClicked = false, currentTempUnit) {
     const weatherApiUrl = `https://api.weatherapi.com/v1/forecast.json?key=${apiKey}&q=${searchInputValue}&aqi=no&days=${numberOfDays}`;
 
     try {
@@ -44,9 +55,15 @@ async function searchForWeatherData(apiKey, numberOfDays, searchInputValue) {
 
         const weatherData = response.json();
 
-        weatherData.then((response) => {
-            renderForecastElements(response);
-        })
+        if(!displayTempUnitButtonClicked) {
+            weatherData.then((response) => {
+                renderForecastElements(response, defaultTempUnit = "°C");
+            })
+        } else {
+            weatherData.then((response) => {
+                renderForecastElements(response, currentTempUnit);
+            });
+        }
 
         return weatherData;
     } catch (error) {
@@ -54,7 +71,7 @@ async function searchForWeatherData(apiKey, numberOfDays, searchInputValue) {
     }
 }
 
-function renderForecastElements(forecastDataResponse) {
+function renderForecastElements(forecastDataResponse, defaultTempUnit) {
     console.log(forecastDataResponse);
 
     const forecastData = forecastDataResponse.forecast.forecastday;
@@ -109,7 +126,7 @@ function renderForecastElements(forecastDataResponse) {
         row.append(forecastCardContainer);
 
         populateRowWithForecastDate(forecastData, forecastDateTextHolder, currentForecastRow);
-        populateRowWithForecastCards(forecastData, forecastCardContainer, currentForecastRow);
+        populateRowWithForecastCards(forecastData, forecastCardContainer, currentForecastRow, defaultTempUnit);
 
         currentForecastRow++;
     });
@@ -130,7 +147,7 @@ function populateRowWithForecastDate(forecastData, forecastDateTextHolder, curre
     forecastDateTextHolder.appendChild(forecastDateTextNode)
 }
 
-function populateRowWithForecastCards(forecastData, forecastCardContainer, currentForecastRow) {
+function populateRowWithForecastCards(forecastData, forecastCardContainer, currentForecastRow, defaultTempUnit) {
     const numberOfForecastCards = 6;
 
     for (let i = 0; i < numberOfForecastCards; i++) {
@@ -148,20 +165,34 @@ function populateRowWithForecastCards(forecastData, forecastCardContainer, curre
         const temp = document.createElement("p");
         temp.classList.add("temp");
 
-        //logika za populiranje podataka s apija (switch)
         if (i === 0) {
             hour.textContent = "";
             img.src = "https:" + forecastData[currentForecastRow].day.condition.icon;
             weatherText.textContent = forecastData[currentForecastRow].day.condition.text;
-            temp.textContent = "Temperature: " + forecastData[currentForecastRow].day.avgtemp_c + " °C";
+
+            //logic for switching temp unit
+            if(defaultTempUnit === "°C") {
+                temp.textContent = "Temperature: " + forecastData[currentForecastRow].day.avgtemp_c + " °C";
+            } else if(defaultTempUnit === "°F") {
+                temp.textContent = "Temperature: " + forecastData[currentForecastRow].day.avgtemp_f + " °F";
+            } else {
+                console.error("Temperature functionality is deprecated!");
+            }
         } else {
             let hourCount = i * 4;
             hour.textContent = forecastData[currentForecastRow].hour[hourCount].time;
             img.src = "https:" + forecastData[currentForecastRow].hour[hourCount].condition.icon;
             weatherText.textContent = forecastData[currentForecastRow].hour[hourCount].condition.text;
-            temp.textContent = "Temperature: " + forecastData[currentForecastRow].hour[hourCount].temp_c + " °C";
-        }
 
+            //logic for switching temp unit
+            if(defaultTempUnit === "°C") {
+                temp.textContent = "Temperature: " + forecastData[currentForecastRow].hour[hourCount].temp_c + " °C";
+            } else if(defaultTempUnit === "°F") {
+                temp.textContent = "Temperature: " + forecastData[currentForecastRow].hour[hourCount].temp_f + " °F";
+            } else {
+                console.error("Temperature functionality is deprecated!");
+            }
+        }
 
         forecastCard.append(hour);
         forecastCard.append(img);
@@ -191,4 +222,22 @@ function renderSearchInputErrorMessage(glossaryKey) {
     errorMessageCloseButton.addEventListener("click", () => {
         errorMessage.remove();
     });
+}
+
+function toggleTemperatureUnit(searchInputValue, glossaryKey) {
+    if(!searchInputValue) {
+        renderSearchInputErrorMessage(glossaryKey);
+    } else {
+        const currentTempUnitElement = document.querySelector(".current-temp-unit-element") ? document.querySelector(".current-temp-unit-element").textContent : false;
+
+        if(currentTempUnitElement === "°F") {
+            return "°C";
+        } else {
+            return "°F";
+        }
+    }
+}
+
+function toggleTemperatureUnitButtonContent(buttonElement, currentTempUnit = "°C") {
+    buttonElement.innerHTML = "Display: " + "<span class='current-temp-unit-element'>" + currentTempUnit + "</span>"; 
 }
